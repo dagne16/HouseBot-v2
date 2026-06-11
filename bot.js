@@ -121,19 +121,49 @@ function buildKeyboard(userId) {
 function sendHome(chatId, userId) {
   const users   = db.getUsers();
   const isOwner = String(userId) === String(OWNER_ID);
+  const user    = users.find(u => String(u.telegramId) === String(userId));
+  const userName = user ? user.name : "Guest";
 
   const status = users.length < 4
-    ? `⏳ <b>${users.length}/4</b> roommates registered`
-    : `✅ <b>All 4 roommates</b> ready!`;
+    ? `Registered Users: ${users.length}/4`
+    : `All 4 roommates ready!`;
 
+  // Big reply keyboard buttons at bottom of chat
+  const replyRows = [
+    [{ text: "🏠 Open HouseBot App" }],
+    [{ text: "👥 View Users" }, { text: "📅 View Schedule" }],
+    [{ text: "🎰 Spin the Wheel" }],
+  ];
+  if (isOwner) {
+    replyRows.push([{ text: "➕ Add Roommate" }, { text: "➖ Remove Roommate" }]);
+  }
+  if (GROUP_LINK) {
+    replyRows.push([{ text: "👥 Go to Group Chat" }]);
+  }
+  replyRows.push([{ text: "❌ Exit" }]);
+
+  // Welcome message with reply keyboard
   bot.sendMessage(chatId,
-    `🏠 <b>HouseBot</b>\n\n${status}\n` +
-    (isOwner ? `\n👑 You are the owner.\n` : ``) +
-    `\nChoose an option below:`,
-    { parse_mode: "HTML",
-      reply_markup: { inline_keyboard: buildKeyboard(userId) }
+    `🏠 <b>Welcome to HouseBot!</b>\n\n` +
+    `👤 User: ${userName}\n` +
+    `🔢 ${status}\n\n` +
+    `Use the buttons below to manage:\n` +
+    `🛒 Weekly shopping\n` +
+    `🧹 House cleaning & trash`,
+    {
+      parse_mode: "HTML",
+      reply_markup: {
+        keyboard: replyRows,
+        resize_keyboard: true,
+        persistent: true,
+      }
     }
   );
+
+  // Inline web app button
+  bot.sendMessage(chatId, `Tap below to open the app 👇`, {
+    reply_markup: { inline_keyboard: buildKeyboard(userId) }
+  });
 }
 
 // ── /start ───────────────────────────────────────────────────
@@ -280,9 +310,80 @@ bot.onText(/\/status/, (msg) => {
   bot.sendMessage(msg.chat.id, `👥 <b>Roommates (${users.length}/4)</b>\n\n${lines}`, { parse_mode: "HTML" });
 });
 
-// ── Track usernames ──────────────────────────────────────────
+// ── Track usernames + handle reply keyboard buttons ──────────
 bot.on("message", (msg) => {
   if (msg.from?.username) db.cacheUsername(msg.from.username, msg.from.id);
+
+  const chatId  = msg.chat.id;
+  const userId  = msg.from.id;
+  const isOwner = String(userId) === String(OWNER_ID);
+  const text    = msg.text || "";
+
+  if (text === "🏠 Open HouseBot App") {
+    bot.sendMessage(chatId, "Tap below to open the app 👇", {
+      reply_markup: { inline_keyboard: [[
+        { text: "🎰 Open HouseBot App", web_app: { url: WEBAPP_URL } }
+      ]]}
+    });
+  }
+
+  if (text === "👥 View Users") {
+    const users = db.getUsers();
+    if (!users.length) return bot.sendMessage(chatId, "No roommates yet.");
+    const lines = users.map((u,i) =>
+      `${i+1}. <b>${u.name}</b>${u.username ? ` @${u.username}` : ""} — 🧹${u.cleaningCount||0} 🛒${u.shoppingCount||0}`
+    ).join("\n");
+    bot.sendMessage(chatId, `👥 <b>Roommates (${users.length}/4)</b>\n\n${lines}`, { parse_mode: "HTML" });
+  }
+
+  if (text === "📅 View Schedule") {
+    const schedule = db.getSchedule();
+    if (!schedule || schedule.length === 0)
+      return bot.sendMessage(chatId, "No schedule yet. Spin the wheel first!");
+    const lines = schedule.map((s,i) =>
+      `${i+1}. <b>${s.name}</b>\n   🧹 ${s.cleaningDate} (${s.cleaningDay||""})\n   🛒 ${s.shoppingDate} (${s.shoppingDay||""})`
+    ).join("\n\n");
+    bot.sendMessage(chatId, `📅 <b>Schedule</b>\n\n${lines}`, { parse_mode: "HTML" });
+  }
+
+  if (text === "🎰 Spin the Wheel") {
+    bot.sendMessage(chatId, "Tap below to open the app and spin! 🎰", {
+      reply_markup: { inline_keyboard: [[
+        { text: "🎰 Open HouseBot App", web_app: { url: WEBAPP_URL } }
+      ]]}
+    });
+  }
+
+  if (text === "➕ Add Roommate") {
+    if (!isOwner) return bot.sendMessage(chatId, "❌ Owner only.");
+    bot.sendMessage(chatId,
+      `➕ <b>Add a Roommate</b>\n\nThe person must send /start first.\n\nThen type:\n<code>/adduser Name @username</code>`,
+      { parse_mode: "HTML" }
+    );
+  }
+
+  if (text === "➖ Remove Roommate") {
+    if (!isOwner) return bot.sendMessage(chatId, "❌ Owner only.");
+    const users = db.getUsers();
+    if (!users.length) return bot.sendMessage(chatId, "No roommates to remove.");
+    const keyboard = users.map(u => ([{
+      text: `❌ Remove ${u.name}`, callback_data: `remove_${u.name}`
+    }]));
+    keyboard.push([{ text: "← Cancel", callback_data: "back_home" }]);
+    bot.sendMessage(chatId, `➖ <b>Remove a Roommate</b>\n\nTap to remove:`,
+      { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } }
+    );
+  }
+
+  if (text === "👥 Go to Group Chat" && GROUP_LINK) {
+    bot.sendMessage(chatId, `👥 Join the group: ${GROUP_LINK}`);
+  }
+
+  if (text === "❌ Exit") {
+    bot.sendMessage(chatId, "👋 Bye! Send /start anytime.", {
+      reply_markup: { remove_keyboard: true }
+    });
+  }
 });
 
 // ── Weekly reminders ─────────────────────────────────────────
