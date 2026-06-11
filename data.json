@@ -1,0 +1,29 @@
+{
+  "users": [
+    {
+      "id": 1781076270932,
+      "name": "!>agmaros",
+      "telegramId": "797192119",
+      "username": "Dagnachew_T09",
+      "cleaningCount": 0,
+      "shoppingCount": 0,
+      "registered": "2026-06-10T07:24:30.932Z"
+    }
+  ],
+  "schedule": [
+    {
+      "name": "!>agmaros",
+      "telegramId": "797192119",
+      "username": "Dagnachew_T09",
+      "cleaningDate": "Mon 15 Jun",
+      "cleaningDay": "Monday",
+      "shoppingDate": "Sat 20 Jun",
+      "shoppingDay": "Saturday",
+      "cleaningRaw": "2026-06-14T21:00:00.000Z",
+      "shoppingRaw": "2026-06-19T21:00:00.000Z"
+    }
+  ],
+  "usernameCache": {
+    "dagnachew_t09": "797192119"
+  }
+}

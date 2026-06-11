@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HouseBot</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<!-- SCREEN 1: ONBOARDING -->
+<div id="screen-onboarding" class="screen active">
+  <div class="floating-star star-1">★</div>
+  <div class="floating-star star-2">✦</div>
+  <div class="leaf-deco leaf-left">🌿</div>
+  <div class="leaf-deco leaf-right">🌿</div>
+
+  <div class="onboarding-hero">
+    <div class="avatar-placeholder">
+      <div class="avatar-glow"></div>
+      <div class="avatar-figure">
+        <div class="avatar-head"></div>
+        <div class="avatar-body"></div>
+      </div>
+    </div>
+    <div class="carousel-dots">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </div>
+
+  <div class="onboarding-content">
+    <h1 class="onboarding-title">HOUSEBOT</h1>
+    <h2 class="onboarding-heading">Manage your<br/>roommate squad!</h2>
+    <p class="onboarding-desc">Register 4 roommates, spin the wheel to fairly assign cleaning and shopping each week.</p>
+    <button class="btn-continue" onclick="goToRegistration()">Get Started →</button>
+  </div>
+</div>
+
+<!-- SCREEN 2: REGISTRATION -->
+<div id="screen-registration" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goHome()">← Home</button>
+    <h2 class="screen-title">Roommates</h2>
+    <span class="reg-count" id="reg-count">0/4</span>
+  </div>
+
+  <div class="roommates-grid" id="roommates-grid"></div>
+
+  <div id="add-user-form" class="add-form">
+    <div class="form-icon">👤</div>
+    <p class="form-hint">Owner only — enter password to add</p>
+    <input type="text"     id="input-name"     class="game-input" placeholder="Full name..." />
+    <input type="text"     id="input-username"  class="game-input" placeholder="@telegram (optional)" />
+    <input type="password" id="input-password"  class="game-input" placeholder="Owner password..." />
+    <button class="btn-add" onclick="addRoommate()">+ Add Roommate</button>
+  </div>
+
+  <div id="all-registered-banner" class="all-ready hidden">
+    <span>🎉 All 4 roommates registered!</span>
+    <button class="btn-continue" onclick="goHome()">Go to Dashboard →</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: MAIN DASHBOARD -->
+<div id="screen-main" class="screen">
+  <div class="profile-bar">
+    <div class="profile-avatar">🏠</div>
+    <div class="profile-info">
+      <span class="profile-name" id="profile-name">HouseBot</span>
+      <div class="profile-xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+    </div>
+    <button class="btn-icon-sm" onclick="goToRegistration()">👥</button>
+  </div>
+
+  <div class="score-display">
+    <div class="coin-icon">🏆</div>
+    <span class="score-number" id="score-number">0</span>
+  </div>
+  <div class="score-meta">
+    <span class="meta-pill">🧹 Cleans: <b id="clean-count">0</b></span>
+    <span class="meta-pill">🛒 Shops: <b id="shop-count">0</b></span>
+  </div>
+
+  <div class="hero-section">
+    <div class="hero-placeholder" id="hero-tap">
+      <div class="hero-shadow"></div>
+      <div class="hero-figure">
+        <div class="hero-head"></div>
+        <div class="hero-body"></div>
+        <div class="hero-arms"></div>
+      </div>
+      <div class="hero-glow-ring"></div>
+    </div>
+    <div class="achievement-badge">
+      <span class="badge-icon">🏆</span>
+      <span class="badge-label">Top Cleaner</span>
+    </div>
+  </div>
+
+  <div class="energy-row">
+    <span class="energy-label">⚡ <b id="energy-val">487</b>/500</span>
+    <div class="energy-bar"><div class="energy-fill" style="width:97%"></div></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="gotoSchedule()">
+      <span class="nav-icon">📅</span><span class="nav-label">Schedule</span>
+    </button>
+    <button class="nav-btn" onclick="goToRegistration()">
+      <span class="nav-icon">👥</span><span class="nav-label">Team</span>
+    </button>
+    <button class="nav-btn nav-center" onclick="showScreen('screen-spin')">
+      <span class="nav-icon">🎰</span><span class="nav-label">Spin</span>
+    </button>
+    <button class="nav-btn" onclick="gotoSchedule()">
+      <span class="nav-icon">⭐</span><span class="nav-label">Missions</span>
+    </button>
+    <button class="nav-btn" onclick="goToRegistration()">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Manage</span>
+    </button>
+  </nav>
+</div>
+
+<!-- SCREEN 4: SPIN WHEEL -->
+<div id="screen-spin" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goHome()">← Home</button>
+    <h2 class="screen-title">🎰 Spin the Wheel</h2>
+    <span></span>
+  </div>
+
+  <div class="spin-type-row">
+    <button class="type-btn active" id="btn-type-cleaning" onclick="setSpinType('cleaning')">
+      🧹 Cleaner<br/><small>picks 1 person</small>
+    </button>
+    <button class="type-btn" id="btn-type-shopping" onclick="setSpinType('shopping')">
+      🛒 Shoppers<br/><small>picks 2 people</small>
+    </button>
+  </div>
+
+  <div class="wheel-container">
+    <div class="wheel-pointer">▼</div>
+    <canvas id="spin-wheel" width="300" height="300"></canvas>
+    <div class="wheel-center-btn" onclick="spinWheel()">
+      <span class="spin-go-text">SPIN</span>
+    </div>
+  </div>
+
+  <div id="spin-result" class="spin-result hidden">
+    <div class="result-confetti" id="result-confetti"></div>
+    <div class="result-card">
+      <div class="result-emoji" id="result-emoji">🎉</div>
+      <h3 class="result-heading" id="result-heading">Selected!</h3>
+      <p class="result-names" id="result-names"></p>
+      <button class="btn-continue" onclick="confirmSpin()">✅ Confirm & Notify</button>
+      <button class="btn-ghost" onclick="resetSpin()">🔄 Spin Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: SCHEDULE -->
+<div id="screen-schedule" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goHome()">← Home</button>
+    <h2 class="screen-title">📅 Schedule</h2>
+    <span></span>
+  </div>
+  <div id="schedule-list" class="schedule-list"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
